@@ -165,10 +165,14 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h2 id="how-to-build"><a class="header" href="#how-to-build">How to build</a></h2>
+                        <h1 id="contribution-guide"><a class="header" href="#contribution-guide">Contribution Guide</a></h1>
+<h2 id="build-the-package"><a class="header" href="#build-the-package">Build the package</a></h2>
 <pre><code>mvn clean package -Dmaven.test.skip=true
 </code></pre>
-<h2 id="how-to-run-test"><a class="header" href="#how-to-run-test">How to run test</a></h2>
+<h2 id="install-the-package-to-local-maven-repository"><a class="header" href="#install-the-package-to-local-maven-repository">Install the package to local maven repository</a></h2>
+<pre><code>mvn clean install -Dmaven.test.skip=true
+</code></pre>
+<h2 id="run-tests"><a class="header" href="#run-tests">Run tests</a></h2>
 <pre><code>export RAWKV_PD_ADDRESSES=127.0.0.1:2379
 export TXNKV_PD_ADDRESSES=127.0.0.1:2379
 mvn clean test

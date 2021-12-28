@@ -165,7 +165,33 @@
 
                 <div id="content" class="content">
                     <main>
-                        
+                        <h1 id="quick-start"><a class="header" href="#quick-start">Quick Start</a></h1>
+<p>The package is hosted on maven central repository. To build from source, refer to the <a href="../contribution/introduction.html">Contribution Guide</a>.</p>
+<p>Add maven dependency to <code>pom.xml</code>:</p>
+<pre><code class="language-xml">&lt;dependency&gt;
+	&lt;groupId&gt;org.tikv&lt;/groupId&gt;
+	&lt;artifactId&gt;tikv-client-java&lt;/artifactId&gt;
+	&lt;version&gt;3.1.0&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+<p>Create a <code>RawKVClient</code> by <code>TiSession</code> and <code>TiConfiguration</code>. It is recommended to keep using a single client and session through program, unless having performance issues.</p>
+<pre><code class="language-java">import org.tikv.common.TiConfiguration;
+import org.tikv.common.TiSession;
+import org.tikv.raw.RawKVClient;
+
+public class Main {
+	public static void main() {
+		// You MUST create a raw configuration if you are using RawKVClient.
+		TiConfiguration conf = TiConfiguration.createRawDefault(&quot;127.0.0.1:2379&quot;);
+		try (TiSession session = TiSession.create(conf)) {
+			try (RawKVClient client = session.createRawClient()) {
+				// ... do operations with client
+			}
+		}
+	}
+}
+</code></pre>
+
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">

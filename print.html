@@ -185,7 +185,134 @@ community.</p>
 <p>Wish you have a good journey in developing application or contributing to the
 TiKV Java Client.</p>
 <div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="start-with-examples"><a class="header" href="#start-with-examples">Start With Examples</a></h1>
-<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="performance"><a class="header" href="#performance">Performance</a></h1>
+<p>This section contains examples to demonstrate basic usages of the java client.</p>
+<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="quick-start"><a class="header" href="#quick-start">Quick Start</a></h1>
+<p>The package is hosted on maven central repository. To build from source, refer to the <a href="examples/../contribution/introduction.html">Contribution Guide</a>.</p>
+<p>Add maven dependency to <code>pom.xml</code>:</p>
+<pre><code class="language-xml">&lt;dependency&gt;
+	&lt;groupId&gt;org.tikv&lt;/groupId&gt;
+	&lt;artifactId&gt;tikv-client-java&lt;/artifactId&gt;
+	&lt;version&gt;3.1.0&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+<p>Create a <code>RawKVClient</code> by <code>TiSession</code> and <code>TiConfiguration</code>. It is recommended to keep using a single client and session through program, unless having performance issues.</p>
+<pre><code class="language-java">import org.tikv.common.TiConfiguration;
+import org.tikv.common.TiSession;
+import org.tikv.raw.RawKVClient;
+
+public class Main {
+	public static void main() {
+		// You MUST create a raw configuration if you are using RawKVClient.
+		TiConfiguration conf = TiConfiguration.createRawDefault(&quot;127.0.0.1:2379&quot;);
+		try (TiSession session = TiSession.create(conf)) {
+			try (RawKVClient client = session.createRawClient()) {
+				// ... do operations with client
+			}
+		}
+	}
+}
+</code></pre>
+<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="rawkv"><a class="header" href="#rawkv">RawKV</a></h1>
+<p>Below is the basic usages of RawKV. See <a href="https://tikv.github.io/client-java/apidocs/org/tikv/raw/RawKVClient">API document</a> to see a full list of methods available.</p>
+<pre><code class="language-java">import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import org.tikv.common.TiConfiguration;
+import org.tikv.common.TiSession;
+import org.tikv.kvproto.Kvrpcpb;
+import org.tikv.raw.RawKVClient;
+import org.tikv.shade.com.google.protobuf.ByteString;
+
+public class Main {
+  public static void main() {
+    // You MUST create a raw configuration if you are using RawKVClient.
+    TiConfiguration conf = TiConfiguration.createRawDefault(&quot;127.0.0.1:2379&quot;);
+    TiSession session = TiSession.create(conf);
+    RawKVClient client = session.createRawClient();
+
+    // put
+    client.put(ByteString.copyFromUtf8(&quot;k1&quot;), ByteString.copyFromUtf8(&quot;Hello&quot;));
+    client.put(ByteString.copyFromUtf8(&quot;k2&quot;), ByteString.copyFromUtf8(&quot;,&quot;));
+    client.put(ByteString.copyFromUtf8(&quot;k3&quot;), ByteString.copyFromUtf8(&quot;World&quot;));
+    client.put(ByteString.copyFromUtf8(&quot;k4&quot;), ByteString.copyFromUtf8(&quot;!&quot;));
+    client.put(ByteString.copyFromUtf8(&quot;k5&quot;), ByteString.copyFromUtf8(&quot;Raw KV&quot;));
+
+    // get
+    Optional&lt;ByteString&gt; result = client.get(ByteString.copyFromUtf8(&quot;k1&quot;));
+    System.out.println(result.get().toStringUtf8());
+
+    // batch get
+    List&lt;Kvrpcpb.KvPair&gt; list = client.batchGet(new ArrayList&lt;ByteString&gt;() {{
+        add(ByteString.copyFromUtf8(&quot;k1&quot;));
+        add(ByteString.copyFromUtf8(&quot;k3&quot;));
+    }});
+    System.out.println(list);
+
+    // scan
+    list = client.scan(ByteString.copyFromUtf8(&quot;k1&quot;), ByteString.copyFromUtf8(&quot;k6&quot;), 10);
+    System.out.println(list);
+
+    // close
+    client.close();
+    session.close();
+  }
+}
+</code></pre>
+<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="txnkv"><a class="header" href="#txnkv">TxnKV</a></h1>
+<p>Below is the basic usages of TxnKV.</p>
+<pre><code class="language-java">import com.google.protobuf.ByteString;
+import java.util.ArrayList;
+import org.tikv.common.TiConfiguration;
+import org.tikv.common.TiSession;
+import org.tikv.common.region.RegionStoreClient;
+import org.tikv.common.region.TiRegion;
+import org.tikv.common.util.BackOffer;
+import org.tikv.common.util.ConcreteBackOffer;
+import org.tikv.kvproto.Kvrpcpb;
+
+public class Main {
+  public static void main() {
+    TiConfiguration conf = TiConfiguration.createDefault();
+    try (TiSession session = TiSession.create(conf)) {
+      ByteString key1 = ByteString.copyFromUtf8(&quot;key1&quot;);
+      ByteString key2 = ByteString.copyFromUtf8(&quot;key2&quot;);
+      ArrayList&lt;Kvrpcpb.Mutation&gt; mutations =
+          new ArrayList&lt;Kvrpcpb.Mutation&gt;() {
+            {
+              add(
+                  Kvrpcpb.Mutation.newBuilder()
+                      .setKey(key1)
+                      .setOp(Kvrpcpb.Op.Put)
+                      .setValue(ByteString.copyFromUtf8(&quot;value&quot;))
+                      .build());
+              add(
+                  Kvrpcpb.Mutation.newBuilder()
+                      .setKey(key2)
+                      .setOp(Kvrpcpb.Op.Put)
+                      .setValue(ByteString.copyFromUtf8(&quot;value&quot;))
+                      .build());
+            }
+          };
+      BackOffer backOffer = ConcreteBackOffer.newCustomBackOff(1000);
+      long startTS = session.getTimestamp().getVersion();
+      long commitTS = session.getTimestamp().getVersion();
+      ArrayList&lt;ByteString&gt; commitKeys =
+          new ArrayList&lt;ByteString&gt;() {
+            {
+              add(key1);
+              add(key2);
+            }
+          };
+      TiRegion region = session.getRegionManager().getRegionByKey(key1);
+      try (RegionStoreClient client = session.getRegionStoreClientBuilder().build(region)) {
+        client.prewrite(backOffer, key1, mutations, 10, startTS, false);
+        client.commit(backOffer, commitKeys, startTS, commitTS);
+      }
+    }
+  }
+}
+</code></pre>
+<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="performance"><a class="header" href="#performance">Performance</a></h1>
 <div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="ycsb-benchmarks"><a class="header" href="#ycsb-benchmarks">YCSB Benchmarks</a></h1>
 <div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="administration"><a class="header" href="#administration">Administration</a></h1>
 <div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h2 id="java-client-configuration-parameter"><a class="header" href="#java-client-configuration-parameter">Java Client Configuration Parameter</a></h2>
@@ -353,10 +480,14 @@ TiKV Java Client.</p>
 <div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="availability-backoff-and-retry-policy"><a class="header" href="#availability-backoff-and-retry-policy">Availability: Backoff and Retry Policy</a></h1>
 <div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="observability-slow-log-and-metrics"><a class="header" href="#observability-slow-log-and-metrics">Observability: Slow Log and Metrics</a></h1>
 <div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="region-cache"><a class="header" href="#region-cache">Region Cache</a></h1>
-<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h2 id="how-to-build"><a class="header" href="#how-to-build">How to build</a></h2>
+<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="contribution-guide"><a class="header" href="#contribution-guide">Contribution Guide</a></h1>
+<h2 id="build-the-package"><a class="header" href="#build-the-package">Build the package</a></h2>
 <pre><code>mvn clean package -Dmaven.test.skip=true
 </code></pre>
-<h2 id="how-to-run-test"><a class="header" href="#how-to-run-test">How to run test</a></h2>
+<h2 id="install-the-package-to-local-maven-repository"><a class="header" href="#install-the-package-to-local-maven-repository">Install the package to local maven repository</a></h2>
+<pre><code>mvn clean install -Dmaven.test.skip=true
+</code></pre>
+<h2 id="run-tests"><a class="header" href="#run-tests">Run tests</a></h2>
 <pre><code>export RAWKV_PD_ADDRESSES=127.0.0.1:2379
 export TXNKV_PD_ADDRESSES=127.0.0.1:2379
 mvn clean test
