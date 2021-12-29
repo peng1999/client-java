@@ -167,29 +167,80 @@
                     <main>
                         <h1 id="quick-start"><a class="header" href="#quick-start">Quick Start</a></h1>
 <p>The package is hosted on maven central repository. To build from source, refer to the <a href="../contribution/introduction.html">Contribution Guide</a>.</p>
-<p>Add maven dependency to <code>pom.xml</code>:</p>
+<h2 id="create-a-maven-project"><a class="header" href="#create-a-maven-project">Create a maven project</a></h2>
+<p>First download <a href="https://maven.apache.org/download.html">maven</a> and follow the <a href="https://maven.apache.org/install.html">installation instructoins</a>. Then <code>mvn</code> command should be available in the <code>$PATH</code>.</p>
+<p>create a maven project by following command:</p>
+<pre><code>mvn archetype:generate -DgroupId=com.example -DartifactId=java-client-example -DarchetypeArtifactId=maven-archetype-quickstart -DinteractiveMode=false
+cd java-client-example
+</code></pre>
+<h2 id="add-dependency"><a class="header" href="#add-dependency">Add dependency</a></h2>
+<p>Add maven dependency to <code>pom.xml</code>.</p>
 <pre><code class="language-xml">&lt;dependency&gt;
-	&lt;groupId&gt;org.tikv&lt;/groupId&gt;
-	&lt;artifactId&gt;tikv-client-java&lt;/artifactId&gt;
-	&lt;version&gt;3.1.0&lt;/version&gt;
+  &lt;groupId&gt;org.tikv&lt;/groupId&gt;
+  &lt;artifactId&gt;tikv-client-java&lt;/artifactId&gt;
+  &lt;version&gt;3.1.0&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+  &lt;groupId&gt;org.slf4j&lt;/groupId&gt;
+  &lt;artifactId&gt;slf4j-log4j12&lt;/artifactId&gt;
+  &lt;version&gt;1.7.32&lt;/version&gt;
 &lt;/dependency&gt;
 </code></pre>
-<p>Create a <code>RawKVClient</code> by <code>TiSession</code> and <code>TiConfiguration</code>. It is recommended to keep using a single client and session through program, unless having performance issues.</p>
+<p>Now <code>pom.xml</code> should look like this:</p>
+<pre><code class="language-xml">&lt;project xmlns=&quot;http://maven.apache.org/POM/4.0.0&quot; xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;
+  xsi:schemaLocation=&quot;http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd&quot;&gt;
+  &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+  &lt;groupId&gt;com.example&lt;/groupId&gt;
+  &lt;artifactId&gt;java-project&lt;/artifactId&gt;
+  &lt;packaging&gt;jar&lt;/packaging&gt;
+  &lt;version&gt;1.0-SNAPSHOT&lt;/version&gt;
+  &lt;name&gt;java-project&lt;/name&gt;
+  &lt;url&gt;http://maven.apache.org&lt;/url&gt;
+  &lt;properties&gt;
+    &lt;maven.compiler.source&gt;1.8&lt;/maven.compiler.source&gt;
+    &lt;maven.compiler.target&gt;1.8&lt;/maven.compiler.target&gt;
+  &lt;/properties&gt;
+  &lt;dependencies&gt;
+    &lt;dependency&gt;
+      &lt;groupId&gt;junit&lt;/groupId&gt;
+      &lt;artifactId&gt;junit&lt;/artifactId&gt;
+      &lt;version&gt;4.12&lt;/version&gt;
+      &lt;scope&gt;test&lt;/scope&gt;
+    &lt;/dependency&gt;
+    &lt;dependency&gt;
+      &lt;groupId&gt;org.tikv&lt;/groupId&gt;
+      &lt;artifactId&gt;tikv-client-java&lt;/artifactId&gt;
+      &lt;version&gt;3.1.0&lt;/version&gt;
+    &lt;/dependency&gt;
+    &lt;dependency&gt;
+      &lt;groupId&gt;org.slf4j&lt;/groupId&gt;
+      &lt;artifactId&gt;slf4j-log4j12&lt;/artifactId&gt;
+      &lt;version&gt;1.7.32&lt;/version&gt;
+    &lt;/dependency&gt;
+  &lt;/dependencies&gt;
+&lt;/project&gt;
+</code></pre>
+<h2 id="writing-code"><a class="header" href="#writing-code">Writing code</a></h2>
+<p>Write code in <code>src/main/java/com/example/App.java</code>:</p>
 <pre><code class="language-java">import org.tikv.common.TiConfiguration;
 import org.tikv.common.TiSession;
 import org.tikv.raw.RawKVClient;
 
 public class Main {
-	public static void main() {
-		// You MUST create a raw configuration if you are using RawKVClient.
-		TiConfiguration conf = TiConfiguration.createRawDefault(&quot;127.0.0.1:2379&quot;);
-		try (TiSession session = TiSession.create(conf)) {
-			try (RawKVClient client = session.createRawClient()) {
-				// ... do operations with client
-			}
-		}
-	}
+  public static void main() {
+    // You MUST create a raw configuration if you are using RawKVClient.
+    TiConfiguration conf = TiConfiguration.createRawDefault(&quot;127.0.0.1:2379&quot;);
+    try (TiSession session = TiSession.create(conf)) {
+      try (RawKVClient client = session.createRawClient()) {
+        // ... do operations with client
+      }
+    }
+  }
 }
+</code></pre>
+<h2 id="running-program"><a class="header" href="#running-program">Running program</a></h2>
+<p>Run following command:</p>
+<pre><code>mvn package exec:java -Dexec.mainClass=com.example.App
 </code></pre>
 
                     </main>
