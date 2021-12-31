@@ -240,7 +240,8 @@ public class Main {
 </code></pre>
 <h2 id="running-program"><a class="header" href="#running-program">Running program</a></h2>
 <p>Run following command:</p>
-<pre><code>mvn package exec:java -Dexec.mainClass=com.example.App
+<pre><code>mvn assembly:assembly -DdescriptorId=jar-with-dependencies
+java -cp target/java-client-example-1.0-SNAPSHOT-jar-with-dependencies.jar com.example.App
 </code></pre>
 
                     </main>
