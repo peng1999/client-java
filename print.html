@@ -311,57 +311,66 @@ public class Main {
 }
 </code></pre>
 <div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="txnkv"><a class="header" href="#txnkv">TxnKV</a></h1>
-<p>Below is the basic usages of TxnKV.</p>
-<pre><code class="language-java">import com.google.protobuf.ByteString;
-import java.util.ArrayList;
+<p>Below is the basic usages of TxnKV.
+Data should be written into TxnKV using <a href="https://tikv.github.io/client-java/apidocs/org/tikv/txn/TwoPhaseCommitter.html"><code>TwoPhaseCommitter</code></a>, and be read using <a href="https://tikv.github.io/client-java/apidocs/org/tikv/txn/KVClient.html"><code>org.tikv.txn.KVClient</code></a>.</p>
+<pre><code class="language-java">import java.util.Arrays;
+import java.util.List;
+
+import org.tikv.common.BytePairWrapper;
+import org.tikv.common.ByteWrapper;
 import org.tikv.common.TiConfiguration;
 import org.tikv.common.TiSession;
-import org.tikv.common.region.RegionStoreClient;
-import org.tikv.common.region.TiRegion;
 import org.tikv.common.util.BackOffer;
 import org.tikv.common.util.ConcreteBackOffer;
-import org.tikv.kvproto.Kvrpcpb;
+import org.tikv.kvproto.Kvrpcpb.KvPair;
+import org.tikv.shade.com.google.protobuf.ByteString;
+import org.tikv.txn.KVClient;
+import org.tikv.txn.TwoPhaseCommitter;
 
-public class Main {
-  public static void main() {
-    TiConfiguration conf = TiConfiguration.createDefault();
-    try (TiSession session = TiSession.create(conf)) {
-      ByteString key1 = ByteString.copyFromUtf8(&quot;key1&quot;);
-      ByteString key2 = ByteString.copyFromUtf8(&quot;key2&quot;);
-      ArrayList&lt;Kvrpcpb.Mutation&gt; mutations =
-          new ArrayList&lt;Kvrpcpb.Mutation&gt;() {
-            {
-              add(
-                  Kvrpcpb.Mutation.newBuilder()
-                      .setKey(key1)
-                      .setOp(Kvrpcpb.Op.Put)
-                      .setValue(ByteString.copyFromUtf8(&quot;value&quot;))
-                      .build());
-              add(
-                  Kvrpcpb.Mutation.newBuilder()
-                      .setKey(key2)
-                      .setOp(Kvrpcpb.Op.Put)
-                      .setValue(ByteString.copyFromUtf8(&quot;value&quot;))
-                      .build());
+public class App {
+    public static void main(String[] args) throws Exception {
+        TiConfiguration conf = TiConfiguration.createDefault(&quot;127.0.0.1:2389&quot;);
+        try (TiSession session = TiSession.create(conf)) {
+            // two-phrase write
+            long startTS = session.getTimestamp().getVersion();
+            try (TwoPhaseCommitter twoPhaseCommitter = new TwoPhaseCommitter(session, startTS)) {
+                BackOffer backOffer = ConcreteBackOffer.newCustomBackOff(1000);
+                byte[] primaryKey = &quot;key1&quot;.getBytes(&quot;UTF-8&quot;);
+                byte[] key2 = &quot;key2&quot;.getBytes(&quot;UTF-8&quot;);
+
+                // first phrase: prewrite
+                twoPhaseCommitter.prewritePrimaryKey(backOffer, primaryKey, &quot;val1&quot;.getBytes(&quot;UTF-8&quot;));
+                List&lt;BytePairWrapper&gt; pairs = Arrays
+                        .asList(new BytePairWrapper(key2, &quot;val2&quot;.getBytes(&quot;UTF-8&quot;)));
+                twoPhaseCommitter.prewriteSecondaryKeys(primaryKey, pairs.iterator(), 1000);
+
+                // second phrase: commit
+                long commitTS = session.getTimestamp().getVersion();
+                twoPhaseCommitter.commitPrimaryKey(backOffer, primaryKey, commitTS);
+                List&lt;ByteWrapper&gt; keys = Arrays.asList(new ByteWrapper(key2));
+                twoPhaseCommitter.commitSecondaryKeys(keys.iterator(), commitTS, 1000);
             }
-          };
-      BackOffer backOffer = ConcreteBackOffer.newCustomBackOff(1000);
-      long startTS = session.getTimestamp().getVersion();
-      long commitTS = session.getTimestamp().getVersion();
-      ArrayList&lt;ByteString&gt; commitKeys =
-          new ArrayList&lt;ByteString&gt;() {
-            {
-              add(key1);
-              add(key2);
+
+            try (KVClient kvClient = session.createKVClient()) {
+                long version = session.getTimestamp().getVersion();
+                ByteString key1 = ByteString.copyFromUtf8(&quot;key1&quot;);
+                ByteString key2 = ByteString.copyFromUtf8(&quot;key2&quot;);
+
+                // get value of a single key
+                ByteString val = kvClient.get(key1, version);
+                System.out.println(val);
+
+                // get value of multiple keys
+                BackOffer backOffer = ConcreteBackOffer.newCustomBackOff(1000);
+                List&lt;KvPair&gt; kvPairs = kvClient.batchGet(backOffer, Arrays.asList(key1, key2), version);
+                System.out.println(kvPairs);
+
+                // get value of a range of keys
+                kvPairs = kvClient.scan(key1, ByteString.copyFromUtf8(&quot;key3&quot;), version);
+                System.out.println(kvPairs);
             }
-          };
-      TiRegion region = session.getRegionManager().getRegionByKey(key1);
-      try (RegionStoreClient client = session.getRegionStoreClientBuilder().build(region)) {
-        client.prewrite(backOffer, key1, mutations, 10, startTS, false);
-        client.commit(backOffer, commitKeys, startTS, commitTS);
-      }
+        }
     }
-  }
 }
 </code></pre>
 <div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="performance"><a class="header" href="#performance">Performance</a></h1>
