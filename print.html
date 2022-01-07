@@ -535,6 +535,23 @@ public class App {
 <p>Import the <a href="administration//metrics/grafana/client_java_summary.json">Client-Java-Summary dashboard config</a> to Grafana.</p>
 <div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="troubleshooting"><a class="header" href="#troubleshooting">Troubleshooting</a></h1>
 <div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="slow-request-diagnosis"><a class="header" href="#slow-request-diagnosis">Slow Request Diagnosis</a></h1>
+<p>If a request take too much time, we can collect the detailed time spend in each component in a “slow log”.</p>
+<pre><code>22/01/07 16:16:07 WARN log.SlowLogImpl: SlowLog:{&quot;start&quot;:&quot;16:16:07.613&quot;,&quot;end&quot;:&quot;16:16:07.618&quot;,&quot;duration&quot;:&quot;5ms&quot;,&quot;func&quot;:&quot;get&quot;,&quot;region&quot;:&quot;{Region[6] ConfVer[5] Version[2] Store[4] KeyRange[]:[t\\200\\000\\000\\000\\000\\000\\000\\377\\005\\000\\000\\000\\000\\000\\000\\000\\370]}&quot;,&quot;key&quot;:&quot;k1&quot;,&quot;spans&quot;:[{&quot;name&quot;:&quot;getRegionByKey&quot;,&quot;start&quot;:&quot;16:16:07.613&quot;,&quot;end&quot;:&quot;16:16:07.613&quot;,&quot;duration&quot;:&quot;0ms&quot;},{&quot;name&quot;:&quot;callWithRetry tikvpb.Tikv/RawGet&quot;,&quot;start&quot;:&quot;16:16:07.613&quot;,&quot;end&quot;:&quot;16:16:07.617&quot;,&quot;duration&quot;:&quot;4ms&quot;},{&quot;name&quot;:&quot;gRPC tikvpb.Tikv/RawGet&quot;,&quot;start&quot;:&quot;16:16:07.613&quot;,&quot;end&quot;:&quot;16:16:07.617&quot;,&quot;duration&quot;:&quot;4ms&quot;}]}
+</code></pre>
+<h2 id="slow-log-configurations"><a class="header" href="#slow-log-configurations">Slow log configurations</a></h2>
+<table><thead><tr><th>SlowLog settings</th><th>default value</th></tr></thead><tbody>
+<tr><td>tikv.rawkv.read_slowlog_in_ms</td><td>tikv.grpc.timeout_in_ms * 2</td></tr>
+<tr><td>tikv.rawkv.write_slowlog_in_ms</td><td>tikv.grpc.timeout_in_ms * 2</td></tr>
+<tr><td>tikv.rawkv.batch_read_slowlog_in_ms</td><td>tikv.grpc.timeout_in_ms * 2</td></tr>
+<tr><td>tikv.rawkv.batch_write_slowlog_in_ms</td><td>tikv.grpc.timeout_in_ms * 2</td></tr>
+<tr><td>tikv.rawkv.scan_slowlog_in_ms</td><td>5s</td></tr>
+</tbody></table>
+<p>Each settings can be set by system properties, configuration files or <code>set...</code> method of <code>TiConfiguration</code>.</p>
+<p>System properties can be set by <code>-D</code> parameter of <code>java</code> command.</p>
+<pre><code>java -cp target/java-client-example-1.0-SNAPSHOT-jar-with-dependencies.jar -Dtikv.rawkv.read_slowlog_in_ms=100 com.example.App
+</code></pre>
+<p>Configuration file is <code>src/main/resources/tikv.properties</code> in maven projects.</p>
+<h2 id="visualize-slow-log"><a class="header" href="#visualize-slow-log">Visualize slow log</a></h2>
 <div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="error-request-diagnosis"><a class="header" href="#error-request-diagnosis">Error Request Diagnosis</a></h1>
 <div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="architecture"><a class="header" href="#architecture">Architecture</a></h1>
 <div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="the-lifecycle-of-a-request"><a class="header" href="#the-lifecycle-of-a-request">The Lifecycle of A Request</a></h1>
