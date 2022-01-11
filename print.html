@@ -557,6 +557,7 @@ public class App {
 <h2 id="visualize-slow-log"><a class="header" href="#visualize-slow-log">Visualize slow log</a></h2>
 <p>TBD</p>
 <div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="architecture"><a class="header" href="#architecture">Architecture</a></h1>
+<p>This section includes in-depthA description of the client architecture.</p>
 <div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="the-lifecycle-of-a-request"><a class="header" href="#the-lifecycle-of-a-request">The Lifecycle of A Request</a></h1>
 <p><img src="architecture/./timegraph.png" alt="time graph" /></p>
 <p>The client talks to TiKV store directly using gRPC requests, which are created in RegionStoreClient. If a request failed, the client could retry after a back off sleep. The retry logic is delegated to AbstractGRPCClient::callWithRetry method. callWithRetry may decide to retry request within the function, or, if the RegionStoreClient must be recreated (due to, for example, region split), return a failure and let outermost RawKVClient to do the retry.</p>
