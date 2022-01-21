@@ -244,12 +244,15 @@ cd java-client-example
 <h2 id="writing-code"><a class="header" href="#writing-code">Writing code</a></h2>
 <p>To interact with TiKV, we should first create a <code>TiConfiguration</code> with PD address, create a <code>TiSession</code> using <code>TiSession.create</code>, and then create a client.
 For example, if we want to put a <code>World</code> in <code>Hello</code> key in RawKV, write the following code in <code>src/main/java/com/example/App.java</code>.</p>
-<pre><code class="language-java">import org.tikv.common.TiConfiguration;
+<pre><code class="language-java">import java.util.Optional;
+
+import org.tikv.common.TiConfiguration;
 import org.tikv.common.TiSession;
 import org.tikv.raw.RawKVClient;
+import org.tikv.shade.com.google.protobuf.ByteString;
 
 public class App {
-  public static void main() {
+  public static void main(String[] args) throws Exception {
     String pdAddr = &quot;127.0.0.1:2379&quot;;
     // You MUST create a raw configuration if you are using RawKVClient.
     TiConfiguration conf = TiConfiguration.createRawDefault(pdAddr);
