@@ -244,9 +244,7 @@ cd java-client-example
 <h2 id="writing-code"><a class="header" href="#writing-code">Writing code</a></h2>
 <p>To interact with TiKV, we should first create a <code>TiConfiguration</code> with PD address, create a <code>TiSession</code> using <code>TiSession.create</code>, and then create a client.
 For example, if we want to put a <code>World</code> in <code>Hello</code> key in RawKV, write the following code in <code>src/main/java/com/example/App.java</code>.</p>
-<pre><code class="language-java">import java.util.Optional;
-
-import org.tikv.common.TiConfiguration;
+<pre><code class="language-java">import org.tikv.common.TiConfiguration;
 import org.tikv.common.TiSession;
 import org.tikv.raw.RawKVClient;
 import org.tikv.shade.com.google.protobuf.ByteString;
@@ -259,8 +257,8 @@ public class App {
     try (TiSession session = TiSession.create(conf)) {
       try (RawKVClient client = session.createRawClient()) {
         client.put(ByteString.copyFromUtf8(&quot;Hello&quot;), ByteString.copyFromUtf8(&quot;World&quot;));
-        Optional&lt;ByteString&gt; value = client.get(ByteString.copyFromUtf8(&quot;Hello&quot;));
-        System.out.println(value.get());
+        ByteString value = client.get(ByteString.copyFromUtf8(&quot;Hello&quot;));
+        System.out.println(value);
       }
     }
   }
